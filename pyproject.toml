@@ -1,0 +1,34 @@
+[project]
+name = "servekit"
+version = "1.0.0"
+description = "A lightweight HTTP/1.1 server framework built from raw TCP sockets"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [
+    {name = "Haji Rufai", email = "hajirufai108@gmail.com"},
+]
+keywords = ["http", "server", "tcp", "websocket", "framework", "networking"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+
+[project.urls]
+Homepage = "https://github.com/hajirufai/servekit"
+Repository = "https://github.com/hajirufai/servekit"
+Issues = "https://github.com/hajirufai/servekit/issues"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

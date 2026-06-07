@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServeKit — HTTP from raw sockets</title>
+    <meta name="description" content="An HTTP/1.1 server framework built from raw TCP sockets in Python. Zero dependencies.">
+
+    <!-- Hallmark · macrostructure: Manifesto · theme: Foundry · genre: utilitarian -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Literata:opsz,wght@7..72,600;7..72,700&display=swap" rel="stylesheet">
+    <style>
+        /* === Tokens === */
+        :root {
+            --c-bg:       oklch(0.16 0.012 250);
+            --c-surface:  oklch(0.20 0.014 250);
+            --c-border:   oklch(0.30 0.010 250);
+            --c-text:     oklch(0.88 0.008 250);
+            --c-muted:    oklch(0.60 0.008 250);
+            --c-accent:   oklch(0.72 0.12 160);
+            --c-accent-d: oklch(0.58 0.10 160);
+            --c-code-bg:  oklch(0.13 0.012 250);
+
+            --font-display: "Literata", ui-serif, Georgia, serif;
+            --font-body:    "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+            --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 1.5rem;
+            --space-lg: 3rem;
+            --space-xl: 5rem;
+            --max-w:    64rem;
+        }
+
+        /* === Reset === */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--c-text);
+            background: var(--c-bg);
+            -webkit-font-smoothing: antialiased;
+        }
+        a { color: var(--c-accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* === Layout === */
+        .wrap { max-width: var(--max-w); margin: 0 auto; padding: 0 var(--space-md); }
+
+        /* === Nav — minimal top bar === */
+        nav {
+            padding: var(--space-sm) 0;
+            border-bottom: 1px solid var(--c-border);
+        }
+        nav .wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--c-accent);
+            letter-spacing: -0.02em;
+        }
+        nav a.gh {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--c-muted);
+        }
+
+        /* === Manifesto hero === */
+        .hero {
+            padding: var(--space-xl) 0 var(--space-lg);
+            border-bottom: 1px solid var(--c-border);
+        }
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+            font-weight: 700;
+            line-height: 1.12;
+            letter-spacing: -0.03em;
+            color: var(--c-text);
+            max-width: 18ch;
+            margin-bottom: var(--space-md);
+        }
+        .hero h1 em {
+            font-style: normal;
+            color: var(--c-accent);
+        }
+        .hero .tagline {
+            font-size: 1.15rem;
+            color: var(--c-muted);
+            max-width: 48ch;
+            margin-bottom: var(--space-lg);
+        }
+        .hero-meta {
+            display: flex;
+            gap: var(--space-lg);
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--c-muted);
+        }
+        .hero-meta span { display: block; }
+        .hero-meta strong {
+            font-weight: 500;
+            color: var(--c-text);
+            display: block;
+            font-size: 1.4rem;
+            margin-bottom: 0.15rem;
+        }
+
+        /* === Declaration strip === */
+        .declaration {
+            padding: var(--space-lg) 0;
+            border-bottom: 1px solid var(--c-border);
+        }
+        .declaration p {
+            font-family: var(--font-display);
+            font-size: clamp(1.3rem, 2.6vw, 1.75rem);
+            font-weight: 600;
+            line-height: 1.4;
+            max-width: 52ch;
+            color: var(--c-text);
+        }
+
+        /* === Code demo === */
+        .code-section {
+            padding: var(--space-lg) 0;
+            border-bottom: 1px solid var(--c-border);
+        }
+        .code-section .label {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--space-sm);
+        }
+        pre {
+            background: var(--c-code-bg);
+            border: 1px solid var(--c-border);
+            border-radius: 6px;
+            padding: var(--space-md);
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            line-height: 1.55;
+            color: var(--c-text);
+        }
+        .kw { color: oklch(0.72 0.12 160); }
+        .fn { color: oklch(0.78 0.10 80); }
+        .str { color: oklch(0.72 0.08 60); }
+        .cm { color: var(--c-muted); }
+        .op { color: oklch(0.7 0.06 250); }
+
+        /* === Features list (manifesto-style) === */
+        .features {
+            padding: var(--space-lg) 0;
+            border-bottom: 1px solid var(--c-border);
+        }
+        .features .label {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--space-md);
+        }
+        .feat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-md) var(--space-lg);
+        }
+        .feat h3 {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+        }
+        .feat p {
+            font-size: 0.92rem;
+            color: var(--c-muted);
+            line-height: 1.5;
+        }
+
+        /* === Architecture (text block) === */
+        .arch {
+            padding: var(--space-lg) 0;
+            border-bottom: 1px solid var(--c-border);
+        }
+        .arch .label {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: var(--space-sm);
+        }
+        .arch pre {
+            font-size: 0.78rem;
+            line-height: 1.5;
+        }
+
+        /* === CTA === */
+        .cta-section {
+            padding: var(--space-xl) 0;
+        }
+        .cta-section p {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+        }
+        .btn {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            font-weight: 500;
+            padding: 0.7rem 1.8rem;
+            background: var(--c-accent);
+            color: var(--c-bg);
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .btn:hover {
+            background: var(--c-accent-d);
+            text-decoration: none;
+        }
+
+        /* === Footer === */
+        footer {
+            padding: var(--space-sm) 0;
+            border-top: 1px solid var(--c-border);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--c-muted);
+        }
+        footer .wrap {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* === Responsive === */
+        @media (max-width: 640px) {
+            .feat-grid { grid-template-columns: 1fr; }
+            .hero-meta { flex-direction: column; gap: var(--space-sm); }
+        }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="wrap">
+        <span class="logo">servekit</span>
+        <a href="https://github.com/hajirufai/servekit" class="gh">view source →</a>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="wrap">
+        <h1>HTTP built from <em>raw sockets.</em></h1>
+        <p class="tagline">A complete HTTP/1.1 server framework in Python. No Flask. No dependencies. Just <code>socket.socket()</code> and hand-written protocol parsing.</p>
+        <div class="hero-meta">
+            <div>
+                <strong>222</strong>
+                <span>passing tests</span>
+            </div>
+            <div>
+                <strong>4,500+</strong>
+                <span>lines of Python</span>
+            </div>
+            <div>
+                <strong>0</strong>
+                <span>dependencies</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="declaration">
+    <div class="wrap">
+        <p>Every HTTP framework hides the protocol behind abstractions. ServeKit doesn't. It opens raw TCP sockets, reads bytes off the wire, parses request lines and headers by hand, matches routes, runs middleware, serializes responses, and pushes bytes back. If you want to understand what happens between a browser and a server — read this code.</p>
+    </div>
+</section>
+
+<section class="code-section">
+    <div class="wrap">
+        <div class="label">Quickstart</div>
+        <pre><code><span class="kw">from</span> servekit <span class="kw">import</span> ServeKit
+
+app <span class="op">=</span> ServeKit()
+
+<span class="kw">@</span>app.get(<span class="str">"/"</span>)
+<span class="kw">def</span> <span class="fn">home</span>(req, res):
+    res.json({<span class="str">"message"</span>: <span class="str">"Hello from raw TCP sockets!"</span>})
+
+<span class="kw">@</span>app.get(<span class="str">"/users/{id}"</span>)
+<span class="kw">def</span> <span class="fn">get_user</span>(req, res):
+    user_id <span class="op">=</span> req.params[<span class="str">"id"</span>]
+    res.json({<span class="str">"id"</span>: user_id})
+
+app.listen(<span class="op">8080</span>)</code></pre>
+    </div>
+</section>
+
+<section class="features">
+    <div class="wrap">
+        <div class="label">What's inside</div>
+        <div class="feat-grid">
+            <div class="feat">
+                <h3>HTTP/1.1 Parser</h3>
+                <p>Request line, headers, Content-Length bodies, chunked transfer encoding. All parsed from raw bytes.</p>
+            </div>
+            <div class="feat">
+                <h3>URL Router</h3>
+                <p>Exact paths, parameterized segments <code>{id}</code>, wildcards <code>*path</code>, route groups, priority resolution.</p>
+            </div>
+            <div class="feat">
+                <h3>Middleware Chain</h3>
+                <p>CORS, gzip compression, rate limiting, basic auth, request logging. Stack them, short-circuit them.</p>
+            </div>
+            <div class="feat">
+                <h3>WebSocket (RFC 6455)</h3>
+                <p>HTTP upgrade handshake, frame encode/decode, masking, text/binary/ping/pong/close opcodes.</p>
+            </div>
+            <div class="feat">
+                <h3>Static File Server</h3>
+                <p>MIME types, ETag caching, 304 Not Modified, directory traversal prevention, index files.</p>
+            </div>
+            <div class="feat">
+                <h3>Non-blocking I/O</h3>
+                <p><code>selectors.DefaultSelector</code> event loop with thread pool. Concurrent requests without async/await.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="arch">
+    <div class="wrap">
+        <div class="label">Architecture</div>
+        <pre>
+  TCP socket ─→ selectors event loop ─→ thread pool
+       │
+       ▼
+  Raw bytes ─→ HTTP Parser ─→ Request object
+       │
+       ▼
+  Router (exact │ param │ wildcard)
+       │
+       ▼
+  Middleware chain (before → handler → after)
+       │
+       ▼
+  Response builder ─→ serialize to bytes ─→ TCP send</pre>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="wrap">
+        <p>Read the code. Run the tests. Build on it.</p>
+        <a href="https://github.com/hajirufai/servekit" class="btn">View on GitHub</a>
+    </div>
+</section>
+
+<footer>
+    <div class="wrap">
+        <span>Haji Rufai · 2026</span>
+        <span>MIT License</span>
+    </div>
+</footer>
+
+</body>
+</html>
